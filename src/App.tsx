@@ -506,24 +506,45 @@ const PlaceholderView = ({ title, desc, icon: Icon, color }: any) => (
     <div className="flex-1 flex flex-col items-center justify-center bg-white rounded-3xl border border-slate-200 border-dashed p-10 text-center"><div className={`p-6 rounded-full ${color} mb-6`}><Icon size={64} className="text-white" /></div><h2 className="text-2xl font-bold text-slate-800 mb-2">{title}</h2><p className="text-slate-500 max-w-md">{desc}</p></div>
   </PageTemplate>
 );
+// ==========================================
+// 🚀 ตัวดักจับลิงก์จาก LINE LIFF
+// ==========================================
+const LiffHelper = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // ตรวจสอบว่าใน URL มีคำว่า ?mode=register หรือไม่ (รวมถึงที่ LINE ชอบซ่อนไว้ใน liff.state ด้วย)
+    const searchParams = new URLSearchParams(window.location.search);
+    const mode = searchParams.get('mode');
+    const liffState = searchParams.get('liff.state'); 
+
+    if (mode === 'register' || (liffState && liffState.includes('mode=register'))) {
+      navigate('/register', { replace: true });
+    }
+  }, [navigate]);
+
+  return null;
+};
 
 // ==========================================
-// 4. Router (เพิ่มหน้า /register สำหรับ LIFF)
+// 4. Router (Main App)
 // ==========================================
 export default function App() {
   return (
     <Router>
+      {/* 🚀 วางตัวดักจับไว้ตรงนี้ */}
+      <LiffHelper /> 
+      
       <Routes>
         <Route path="/" element={<HomeView />} />
         <Route path="/dashboard" element={<DashboardView />} />
         <Route path="/members" element={<MembersView />} />
         <Route path="/calendar" element={<CalendarView />} />
         <Route path="/attendance" element={<AttendanceView />} />
-        
-        {/* 🚀 หน้าต่างนี้สำหรับเปิดใน LINE เพื่อกรอกใบสมัคร */}
         <Route path="/register" element={<LineRegisterView />} />
         
-        <Route path="/settings" element={<PlaceholderView title="⚙️ ตั้งค่าระบบ" desc="จัดการสิทธิ์ผู้ใช้งาน" icon={Settings} color="bg-slate-700" />} />
+        <Route path="/notifications" element={<PlaceholderView title="🔔 แจ้งเตือนผ่าน Line OA" desc="ตั้งค่าและส่งข้อความแจ้งเตือนเข้ามือถือสมาชิกโดยตรง" icon={Bell} color="bg-pink-500" />} />
+        <Route path="/settings" element={<PlaceholderView title="⚙️ ตั้งค่าระบบ" desc="จัดการสิทธิ์ผู้ใช้งาน แอดมิน และตั้งค่าอื่นๆ" icon={Settings} color="bg-slate-700" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
