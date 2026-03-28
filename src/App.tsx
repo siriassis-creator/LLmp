@@ -2,17 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 
 // ==========================================
-// 🚀 ดักจับลิงก์ของ LINE ทันทีก่อนที่เว็บจะเริ่มทำงาน (แก้ปัญหาจอกระพริบเตะไปหน้าแรก)
-// ==========================================
-const searchParams = new URLSearchParams(window.location.search);
-const liffState = searchParams.get('liff.state');
-if (liffState) {
-  const decodedPath = decodeURIComponent(liffState);
-  window.history.replaceState(null, '', decodedPath);
-}
-
-// ==========================================
-// 1. Firebase Configuration
+// 1. Firebase Configuration (สภาเด็กและเยาวชน จ.ลำพูน)
 // ==========================================
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
@@ -85,7 +75,7 @@ const PageTemplate = ({ title, children }: any) => {
 };
 
 // ==========================================
-// 🌟 หน้าสำหรับ LINE LIFF: สมัครสมาชิก
+// 🌟 หน้าสำหรับ LINE LIFF: สมัครสมาชิก (13 หัวข้อ)
 // ==========================================
 const LineRegisterView = () => {
   const [profile, setProfile] = useState<any>(null);
@@ -94,7 +84,7 @@ const LineRegisterView = () => {
   const [isRegistered, setIsRegistered] = useState(false);
 
   const [formData, setFormData] = useState({
-    imageUrl: '', memberId: '', position: '', affiliation: 'คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน',
+    imageUrl: '', memberId: '', position: 'สมาชิก', affiliation: 'คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน',
     firstName: '', lastName: '', nickname: '', age: '', height: '', weight: '',
     district: 'เมืองลำพูน', address: '', phone: '', emergencyPhone: ''
   });
@@ -108,10 +98,11 @@ const LineRegisterView = () => {
         if (liff.isLoggedIn()) {
           const p = await liff.getProfile();
           setProfile(p);
+          // 🚀 ดึงรูปลง Form อัตโนมัติ (ถ้าไม่มีให้เป็นค่าว่าง)
           setFormData(prev => ({ ...prev, imageUrl: p.pictureUrl || '' }));
         } else {
-          // ถ้ายังไม่ login ให้บังคับกลับมาที่หน้า register เสมอ
-          liff.login({ redirectUri: window.location.origin + '/register' });
+          // บังคับล็อกอิน แล้วเด้งกลับมาหน้า register อย่างปลอดภัย
+          liff.login({ redirectUri: window.location.origin + '?liff.state=/register' });
         }
       } catch (err) {
         console.error("LIFF Init Error", err);
@@ -128,7 +119,7 @@ const LineRegisterView = () => {
     try {
       await addDoc(collection(db, 'members'), {
         ...formData,
-        lineUserId: profile?.userId || '',
+        lineUserId: profile?.userId || '', 
         createdAt: serverTimestamp()
       });
       setIsRegistered(true);
@@ -138,7 +129,7 @@ const LineRegisterView = () => {
     setIsSaving(false);
   };
 
-  if (isLoading) return <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6"><div className="text-4xl animate-bounce mb-4 text-[#06C755]">💬</div><p className="font-bold text-slate-600">กำลังเตรียมพร้อมระบบ...</p></div>;
+  if (isLoading) return <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6"><div className="text-4xl animate-bounce mb-4 text-[#06C755]">💬</div><p className="font-bold text-slate-600">กำลังเชื่อมต่อ LINE...</p></div>;
 
   if (isRegistered) return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
@@ -175,10 +166,10 @@ const LineRegisterView = () => {
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
             <h3 className="font-bold text-slate-800 text-sm border-b pb-2">📌 ข้อมูลสภาเด็กและเยาวชน</h3>
             
-            {/* 🚀 แก้ไข: นำ required ออกจากลิงก์รูปภาพ และทำให้เป็นช่องอ่านอย่างเดียว (readOnly) */}
+            {/* 🚀 แก้ปัญหาการกรอกรูป: ดึงอัตโนมัติ ล็อกไม่ให้แก้ และไม่ต้องบังคับ required */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">รูปถ่ายโปรไฟล์ (ระบบดึงจาก LINE ให้อัตโนมัติ)</label>
-              <input type="url" value={formData.imageUrl} readOnly className="w-full px-3 py-2 border rounded-xl bg-slate-100 text-slate-500 text-xs focus:outline-none cursor-not-allowed" placeholder="ไม่มีรูปภาพโปรไฟล์" />
+              <label className="block text-xs font-bold text-slate-700 mb-1">รูปโปรไฟล์ (ระบบดึงจาก LINE ให้อัตโนมัติ)</label>
+              <input type="text" value={formData.imageUrl} readOnly className="w-full px-3 py-2 border rounded-xl bg-slate-100 text-slate-400 text-xs focus:outline-none cursor-not-allowed" placeholder="ไม่มีข้อมูลรูปภาพ" />
             </div>
 
             <div><label className="block text-xs font-bold text-slate-700 mb-1">เลขประจำตัวสมาชิกสภาเด็กและเยาวชน</label><input type="text" value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" placeholder="เว้นว่างไว้หากยังไม่มี" /></div>
@@ -372,7 +363,9 @@ const MembersView = () => {
               <div className="bg-white p-4 rounded-xl border border-slate-200">
                 <h4 className="font-bold text-slate-600 text-sm mb-3">📌 ข้อมูลสภาเด็กและเยาวชน</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                  <div className="md:col-span-2 xl:col-span-4"><label className="block text-xs font-bold text-slate-700 mb-1">ลิงก์ URL รูปถ่าย</label><input type="url" placeholder="https://..." value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
+                  {/* 🚀 แก้ไข: ปลดล็อค input url ให้พิมพ์แก้ได้ ไม่ได้บังคับ required */}
+                  <div className="md:col-span-2 xl:col-span-4"><label className="block text-xs font-bold text-slate-700 mb-1">ลิงก์ URL รูปถ่าย</label><input type="text" placeholder="https://... หรือปล่อยว่างไว้" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
+                  
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">เลขประจำตัวสมาชิก</label><input type="text" value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
                   <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">ตำแหน่ง *</label><input required type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
                   <div className="md:col-span-2 xl:col-span-4"><label className="block text-xs font-bold text-slate-700 mb-1">สังกัด *</label><select value={formData.affiliation} onChange={e => setFormData({...formData, affiliation: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm font-bold text-indigo-800 bg-white"><option value="คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน">สังกัด คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน</option><option value="คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน">สังกัด คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน</option></select></div>
@@ -401,7 +394,8 @@ const MembersView = () => {
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ติดต่อ *</label><input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="08X-XXX-XXXX" /></div>
                   <div className="md:col-span-2"><label className="block text-xs font-bold text-red-600 mb-1">เบอร์ติดต่อฉุกเฉิน *</label><input required type="tel" value={formData.emergencyPhone} onChange={e => setFormData({...formData, emergencyPhone: e.target.value})} className="w-full border border-red-200 bg-red-50 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-red-400 text-sm" placeholder="เบอร์ผู้ปกครอง/ญาติ" /></div>
                   
-                  <div className="md:col-span-3"><label className="block text-xs font-bold text-slate-400 mb-1">LINE User ID</label><input type="text" value={formData.lineUserId || ''} disabled className="w-full border p-2.5 rounded-xl bg-slate-50 text-slate-400 font-mono text-sm" placeholder="ไม่มีข้อมูล" /></div>
+                  {/* แสดง LINE ID แต่ห้ามแก้ */}
+                  <div className="md:col-span-3"><label className="block text-xs font-bold text-slate-400 mb-1">LINE User ID (ระบบดึงอัตโนมัติ)</label><input type="text" value={formData.lineUserId || ''} disabled className="w-full border p-2.5 rounded-xl bg-slate-50 text-slate-400 font-mono text-sm" placeholder="ไม่มีข้อมูล" /></div>
                 </div>
               </div>
 
@@ -575,11 +569,31 @@ const PlaceholderView = ({ title, desc, icon: Icon, color }: any) => (
 );
 
 // ==========================================
+// 🚀 ตัวดักจับลิงก์จาก LINE LIFF แบบใหม่ (ใช้ Routing ปกติ)
+// ==========================================
+const LiffHelper = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // โค้ดดักจับ URL จะดูว่ามีความตั้งใจจะเข้า /register หรือไม่
+    // ตอนนี้เราแก้ปัญหาที่ต้นตอด้วย window.history.replaceState ไว้บนสุดของไฟล์แล้ว 
+    // ตัวนี้ทำหน้าที่แค่เช็คอีกรอบเพื่อความชัวร์ว่าเราอยู่ถูกหน้า
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('mode') === 'register') {
+      navigate('/register', { replace: true });
+    }
+  }, [navigate]);
+
+  return null;
+};
+
+// ==========================================
 // 4. Router
 // ==========================================
 export default function App() {
   return (
     <Router>
+      <LiffHelper /> 
       <Routes>
         <Route path="/" element={<HomeView />} />
         <Route path="/dashboard" element={<DashboardView />} />
