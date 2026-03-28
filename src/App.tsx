@@ -34,7 +34,8 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
-const LIFF_ID = "2009629879-g33kYPK0"; // LIFF ID ของคุณ
+// 🚀 LIFF ID ปัจจุบันของคุณ
+const LIFF_ID = "2009629879-g33kYPK0"; 
 
 // ==========================================
 // 2. Components ย่อย (UI)
@@ -79,7 +80,7 @@ const PageTemplate = ({ title, children }: any) => {
 };
 
 // ==========================================
-// 🌟 หน้าสำหรับ LINE LIFF: สมัครสมาชิก
+// 🌟 หน้าสำหรับ LINE LIFF: สมัครสมาชิก (13 หัวข้อ)
 // ==========================================
 const LineRegisterView = () => {
   const [profile, setProfile] = useState<any>(null);
@@ -88,9 +89,11 @@ const LineRegisterView = () => {
   const [isRegistered, setIsRegistered] = useState(false);
 
   const [formData, setFormData] = useState({
-    firstName: '', lastName: '', nickname: '', age: '', phone: '',
-    district: 'เมืองลำพูน', affiliation: 'คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน'
+    imageUrl: '', memberId: '', position: '', affiliation: 'คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน',
+    firstName: '', lastName: '', nickname: '', age: '', height: '', weight: '',
+    district: 'เมืองลำพูน', address: '', phone: '', emergencyPhone: ''
   });
+
   const districts = ['เมืองลำพูน', 'ป่าซาง', 'แม่ทา', 'บ้านโฮ่ง', 'ลี้', 'ทุ่งหัวช้าง', 'บ้านธิ', 'เวียงหนองล่อง'];
 
   useEffect(() => {
@@ -100,8 +103,10 @@ const LineRegisterView = () => {
         if (liff.isLoggedIn()) {
           const p = await liff.getProfile();
           setProfile(p);
+          setFormData(prev => ({ ...prev, imageUrl: p.pictureUrl || '' }));
         } else {
-          liff.login();
+          const redirectUrl = window.location.origin + '/?mode=register';
+          liff.login({ redirectUri: redirectUrl });
         }
       } catch (err) {
         console.error("LIFF Init Error", err);
@@ -118,10 +123,7 @@ const LineRegisterView = () => {
     try {
       await addDoc(collection(db, 'members'), {
         ...formData,
-        imageUrl: profile?.pictureUrl || '',
-        lineUserId: profile?.userId || '',
-        position: 'สมาชิกใหม่ (รอยืนยัน)',
-        memberId: 'LPN-' + Math.floor(Math.random() * 10000), // สร้าง ID ชั่วคราว
+        lineUserId: profile?.userId || '', // 🚀 เก็บ Line User ID ตรงนี้
         createdAt: serverTimestamp()
       });
       setIsRegistered(true);
@@ -131,34 +133,30 @@ const LineRegisterView = () => {
     setIsSaving(false);
   };
 
-  if (isLoading) {
-    return <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6"><div className="text-4xl animate-bounce mb-4 text-[#06C755]">💬</div><p className="font-bold text-slate-600">กำลังเชื่อมต่อ LINE...</p></div>;
-  }
+  if (isLoading) return <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6"><div className="text-4xl animate-bounce mb-4 text-[#06C755]">💬</div><p className="font-bold text-slate-600">กำลังเชื่อมต่อ LINE...</p></div>;
 
-  if (isRegistered) {
-    return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
-        <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center animate-in zoom-in duration-300">
-          <CheckCircle className="text-[#06C755] mx-auto mb-4" size={72}/>
-          <h2 className="text-2xl font-extrabold text-slate-800 mb-2">สมัครสมาชิกสำเร็จ!</h2>
-          <p className="text-slate-600 mb-6">ข้อมูลของคุณถูกส่งไปยังผู้ดูแลระบบเรียบร้อยแล้ว ยินดีต้อนรับสู่สภาเด็กและเยาวชนลำพูนครับ</p>
-          <button onClick={() => liff.closeWindow()} className="w-full bg-[#06C755] text-white py-3 rounded-xl font-bold shadow-md hover:bg-green-600 transition">ปิดหน้าต่างนี้</button>
-        </div>
+  if (isRegistered) return (
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
+      <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center animate-in zoom-in duration-300">
+        <CheckCircle className="text-[#06C755] mx-auto mb-4" size={72}/>
+        <h2 className="text-2xl font-extrabold text-slate-800 mb-2">สมัครสมาชิกสำเร็จ!</h2>
+        <p className="text-slate-600 mb-6">ข้อมูลของคุณถูกบันทึกเข้าสู่ระบบสภาเด็กและเยาวชนลำพูนเรียบร้อยแล้ว</p>
+        <button onClick={() => liff.closeWindow()} className="w-full bg-[#06C755] text-white py-3 rounded-xl font-bold shadow-md hover:bg-green-600 transition">ปิดหน้าต่างนี้</button>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-      <div className="bg-white p-6 rounded-3xl shadow-xl w-full max-w-md border border-slate-200">
+    <div className="min-h-screen bg-slate-100 flex items-start justify-center p-4 md:py-10">
+      <div className="bg-white p-5 md:p-8 rounded-3xl shadow-xl w-full max-w-lg border border-slate-200">
         <div className="text-center mb-6">
           <img src="https://i.postimg.cc/3RwSgrwg/c021db22-1797-4ccf-a2fd-cc7edfcb0cb7.jpg" alt="Logo" className="h-20 w-auto mx-auto mb-3 rounded-full shadow-sm" />
-          <h1 className="text-xl font-extrabold text-slate-800">ลงทะเบียนสมาชิก</h1>
+          <h1 className="text-xl font-extrabold text-slate-800">ลงทะเบียนสมาชิกใหม่</h1>
           <p className="text-slate-500 text-sm">สภาเด็กและเยาวชนลำพูน</p>
         </div>
 
         {profile && (
-          <div className="bg-[#f0fcf4] border border-[#a2ecc2] p-3 rounded-xl mb-6 flex items-center gap-4">
+          <div className="bg-[#f0fcf4] border border-[#a2ecc2] p-3 rounded-xl mb-6 flex items-center gap-4 shadow-sm">
             <img src={profile.pictureUrl} alt="Avatar" className="w-12 h-12 rounded-full shadow-sm" />
             <div>
               <p className="text-[10px] text-green-700 font-bold uppercase tracking-wide">เชื่อมต่อบัญชี LINE แล้ว</p>
@@ -167,27 +165,56 @@ const LineRegisterView = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-xs font-bold text-slate-700 mb-1">ชื่อจริง *</label><input required type="text" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm" /></div>
-            <div><label className="block text-xs font-bold text-slate-700 mb-1">นามสกุล *</label><input required type="text" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm" /></div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ข้อมูลสภาฯ */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
+            <h3 className="font-bold text-slate-800 text-sm border-b pb-2">📌 ข้อมูลสภาเด็กและเยาวชน</h3>
+            <div><label className="block text-xs font-bold text-slate-700 mb-1">ลิงก์ URL รูปถ่าย (ระบบดึงจาก LINE ให้อัตโนมัติ)</label><input required type="url" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-xs text-slate-500 bg-white" placeholder="https://..." /></div>
+            <div><label className="block text-xs font-bold text-slate-700 mb-1">เลขประจำตัวสมาชิกสภาเด็กและเยาวชน</label><input type="text" value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" placeholder="เว้นว่างไว้หากยังไม่มี" /></div>
+            <div><label className="block text-xs font-bold text-slate-700 mb-1">ตำแหน่ง *</label><input required type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" placeholder="เช่น ประธาน, สมาชิกทั่วไป" /></div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">สังกัด *</label>
+              <select value={formData.affiliation} onChange={e => setFormData({...formData, affiliation: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm font-bold text-[#06C755] bg-white">
+                <option value="คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน">สังกัด คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน</option>
+                <option value="คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน">สังกัด คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน</option>
+              </select>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div><label className="block text-xs font-bold text-slate-700 mb-1">ชื่อเล่น</label><input type="text" value={formData.nickname} onChange={e => setFormData({...formData, nickname: e.target.value})} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm" /></div>
-            <div><label className="block text-xs font-bold text-slate-700 mb-1">อายุ (ปี)</label><input type="number" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm" /></div>
+
+          {/* ข้อมูลส่วนตัว */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
+            <h3 className="font-bold text-slate-800 text-sm border-b pb-2">👤 ข้อมูลส่วนบุคคล</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-xs font-bold text-slate-700 mb-1">ชื่อจริง *</label><input required type="text" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" /></div>
+              <div><label className="block text-xs font-bold text-slate-700 mb-1">นามสกุล *</label><input required type="text" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-xs font-bold text-slate-700 mb-1">ชื่อเล่น</label><input type="text" value={formData.nickname} onChange={e => setFormData({...formData, nickname: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" /></div>
+              <div><label className="block text-xs font-bold text-slate-700 mb-1">อายุ (ปี)</label><input type="number" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="block text-xs font-bold text-slate-700 mb-1">ส่วนสูง (ซม.)</label><input type="number" value={formData.height} onChange={e => setFormData({...formData, height: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" /></div>
+              <div><label className="block text-xs font-bold text-slate-700 mb-1">น้ำหนัก (กก.)</label><input type="number" value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" /></div>
+            </div>
           </div>
-          <div><label className="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ติดต่อ *</label><input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm" placeholder="08X-XXX-XXXX" /></div>
-          <div><label className="block text-xs font-bold text-slate-700 mb-1">อำเภอที่พักอาศัย *</label><select value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-bold text-slate-700">{districts.map(d => <option key={d} value={d}>อ.{d}</option>)}</select></div>
+
+          {/* การติดต่อ */}
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
+            <h3 className="font-bold text-slate-800 text-sm border-b pb-2">📍 ข้อมูลการติดต่อ</h3>
+            <div><label className="block text-xs font-bold text-slate-700 mb-1">อำเภอที่พักอาศัย *</label><select value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm font-bold text-slate-700 bg-white">{districts.map(d => <option key={d} value={d}>อ.{d}</option>)}</select></div>
+            <div><label className="block text-xs font-bold text-slate-700 mb-1">ที่อยู่แบบเต็ม</label><input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" placeholder="บ้านเลขที่ หมู่ หมู่บ้าน ตำบล" /></div>
+            <div><label className="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ติดต่อ *</label><input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm font-mono" placeholder="08X-XXX-XXXX" /></div>
+            <div><label className="block text-xs font-bold text-red-600 mb-1">เบอร์โทรฉุกเฉิน *</label><input required type="tel" value={formData.emergencyPhone} onChange={e => setFormData({...formData, emergencyPhone: e.target.value})} className="w-full px-3 py-2.5 border border-red-200 bg-red-50 rounded-xl focus:ring-2 focus:ring-red-400 text-sm font-mono" placeholder="เบอร์ผู้ปกครอง/ญาติ" /></div>
+          </div>
           
-          <button type="submit" disabled={isSaving} className="w-full bg-[#06C755] text-white py-3 rounded-xl font-bold shadow-md hover:bg-green-600 transition flex items-center justify-center gap-2 mt-6">
-            {isSaving ? 'กำลังบันทึกข้อมูล...' : <><Smartphone size={18}/> ยืนยันการสมัครสมาชิก</>}
+          <button type="submit" disabled={isSaving} className="w-full bg-[#06C755] text-white py-4 rounded-xl font-bold shadow-lg hover:bg-green-600 transition flex items-center justify-center gap-2 mt-8 text-lg">
+            {isSaving ? 'กำลังบันทึกข้อมูลลงระบบ...' : <><Smartphone size={22}/> บันทึกและสมัครสมาชิก</>}
           </button>
         </form>
       </div>
     </div>
   );
 };
-
 
 // ==========================================
 // 3. หน้าต่างๆ ของระบบ (Pages - ฝั่ง Admin)
@@ -274,7 +301,9 @@ const DashboardView = () => {
   );
 };
 
-
+// ==========================================
+// 🌟 หน้า MembersView (จัดการสมาชิก - ฝั่ง Admin) อัปเดต 13 หัวข้อเหมือนฝั่ง LINE
+// ==========================================
 const MembersView = () => {
   const [members, setMembers] = useState<any[]>([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -283,7 +312,12 @@ const MembersView = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const initialForm = { imageUrl: '', firstName: '', lastName: '', nickname: '', age: '', position: 'สมาชิก', affiliation: 'คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน', address: '', district: 'เมืองลำพูน', phone: '', memberId: '', height: '', weight: '', emergencyPhone: '' };
+  // 🚀 โครงสร้างฟอร์ม 13 หัวข้อสำหรับ Admin
+  const initialForm = {
+    imageUrl: '', memberId: '', position: 'สมาชิก', affiliation: 'คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน',
+    firstName: '', lastName: '', nickname: '', age: '', height: '', weight: '',
+    district: 'เมืองลำพูน', address: '', phone: '', emergencyPhone: '', lineUserId: ''
+  };
   const [formData, setFormData] = useState<any>(initialForm);
   const districts = ['เมืองลำพูน', 'ป่าซาง', 'แม่ทา', 'บ้านโฮ่ง', 'ลี้', 'ทุ่งหัวช้าง', 'บ้านธิ', 'เวียงหนองล่อง'];
 
@@ -321,26 +355,50 @@ const MembersView = () => {
 
         {isFormVisible && (
           <div className="mb-8 p-6 bg-indigo-50/50 border border-indigo-100 rounded-3xl animate-in slide-in-from-top-4 fade-in duration-300">
-            <div className="flex items-center gap-2 mb-6 border-b border-indigo-100 pb-3"><Contact className="text-indigo-600" size={24}/><h3 className="text-lg font-bold text-indigo-900">{isEditing ? 'แก้ไขข้อมูลสมาชิก' : 'กรอกข้อมูลสมาชิกใหม่'}</h3></div>
+            <div className="flex justify-between items-center mb-6 border-b border-indigo-100 pb-3">
+              <div className="flex items-center gap-2"><Contact className="text-indigo-600" size={24}/><h3 className="text-lg font-bold text-indigo-900">{isEditing ? 'แก้ไขข้อมูลสมาชิก' : 'กรอกข้อมูลสมาชิกใหม่'}</h3></div>
+              {formData.lineUserId && <span className="bg-[#06C755] text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"><Smartphone size={14}/> สมัครผ่าน LINE</span>}
+            </div>
+
             <form onSubmit={handleSaveMember} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                <div className="md:col-span-2 xl:col-span-4"><label className="block text-xs font-bold text-slate-700 mb-1">ลิงก์ URL รูปถ่าย (เว็บฝากรูป)</label><input type="url" placeholder="https://..." value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
-                <div><label className="block text-xs font-bold text-slate-700 mb-1">เลขประจำตัวสมาชิก *</label><input required type="text" value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="เช่น LPN-001" /></div>
-                <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">ตำแหน่ง *</label><input required type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="เช่น ประธาน, รองประธาน, สมาชิก" /></div>
-                <div className="md:col-span-2 xl:col-span-4"><label className="block text-xs font-bold text-slate-700 mb-1">สังกัด *</label><select value={formData.affiliation} onChange={e => setFormData({...formData, affiliation: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm font-bold text-indigo-800 bg-white"><option value="คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน">สังกัด คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน</option><option value="คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน">สังกัด คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน</option></select></div>
+              {/* ข้อมูลสภาฯ */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200">
+                <h4 className="font-bold text-slate-600 text-sm mb-3">📌 ข้อมูลสภาเด็กและเยาวชน</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <div className="md:col-span-2 xl:col-span-4"><label className="block text-xs font-bold text-slate-700 mb-1">ลิงก์ URL รูปถ่าย</label><input type="url" placeholder="https://..." value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
+                  <div><label className="block text-xs font-bold text-slate-700 mb-1">เลขประจำตัวสมาชิก</label><input type="text" value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
+                  <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">ตำแหน่ง *</label><input required type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
+                  <div className="md:col-span-2 xl:col-span-4"><label className="block text-xs font-bold text-slate-700 mb-1">สังกัด *</label><select value={formData.affiliation} onChange={e => setFormData({...formData, affiliation: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm font-bold text-indigo-800 bg-white"><option value="คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน">สังกัด คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน</option><option value="คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน">สังกัด คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน</option></select></div>
+                </div>
               </div>
-              <div className="h-px bg-slate-200"></div>
-              <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-4">
-                <div className="col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">ชื่อจริง *</label><input required type="text" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="ชื่อ" /></div>
-                <div className="col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">นามสกุล *</label><input required type="text" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="นามสกุล" /></div>
-                <div><label className="block text-xs font-bold text-slate-700 mb-1">ชื่อเล่น</label><input type="text" value={formData.nickname} onChange={e => setFormData({...formData, nickname: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="ชื่อเล่น" /></div>
-                <div><label className="block text-xs font-bold text-slate-700 mb-1">อายุ (ปี)</label><input type="number" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="ตัวเลข" /></div>
+
+              {/* ข้อมูลส่วนบุคคล */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200">
+                <h4 className="font-bold text-slate-600 text-sm mb-3">👤 ข้อมูลส่วนบุคคล</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-4">
+                  <div className="col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">ชื่อจริง *</label><input required type="text" value={formData.firstName} onChange={e => setFormData({...formData, firstName: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
+                  <div className="col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">นามสกุล *</label><input required type="text" value={formData.lastName} onChange={e => setFormData({...formData, lastName: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
+                  <div><label className="block text-xs font-bold text-slate-700 mb-1">ชื่อเล่น</label><input type="text" value={formData.nickname} onChange={e => setFormData({...formData, nickname: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
+                  <div><label className="block text-xs font-bold text-slate-700 mb-1">อายุ (ปี)</label><input type="number" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
+                  <div><label className="block text-xs font-bold text-slate-700 mb-1">ส่วนสูง (ซม.)</label><input type="number" value={formData.height} onChange={e => setFormData({...formData, height: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
+                  <div><label className="block text-xs font-bold text-slate-700 mb-1">น้ำหนัก (กก.)</label><input type="number" value={formData.weight} onChange={e => setFormData({...formData, weight: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
+                </div>
               </div>
-              <div className="h-px bg-slate-200"></div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div><label className="block text-xs font-bold text-slate-700 mb-1">อำเภอที่อยู่ *</label><select value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm font-bold text-slate-700 bg-white">{districts.map(d => <option key={d} value={d}>อ.{d}</option>)}</select></div>
-                <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ติดต่อ *</label><input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="08X-XXX-XXXX" /></div>
+
+              {/* การติดต่อ */}
+              <div className="bg-white p-4 rounded-xl border border-slate-200">
+                <h4 className="font-bold text-slate-600 text-sm mb-3">📍 ข้อมูลการติดต่อ</h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div><label className="block text-xs font-bold text-slate-700 mb-1">อำเภอที่อยู่ *</label><select value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm font-bold text-slate-700 bg-white">{districts.map(d => <option key={d} value={d}>อ.{d}</option>)}</select></div>
+                  <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">ที่อยู่แบบเต็ม</label><input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="บ้านเลขที่ หมู่ หมู่บ้าน ตำบล" /></div>
+                  <div><label className="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ติดต่อ *</label><input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="08X-XXX-XXXX" /></div>
+                  <div className="md:col-span-2"><label className="block text-xs font-bold text-red-600 mb-1">เบอร์ติดต่อฉุกเฉิน *</label><input required type="tel" value={formData.emergencyPhone} onChange={e => setFormData({...formData, emergencyPhone: e.target.value})} className="w-full border border-red-200 bg-red-50 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-red-400 text-sm" placeholder="เบอร์ผู้ปกครอง/ญาติ" /></div>
+                  
+                  {/* แสดง LINE ID แต่ห้ามแก้ */}
+                  <div className="md:col-span-3"><label className="block text-xs font-bold text-slate-400 mb-1">LINE User ID (ระบบดึงอัตโนมัติ)</label><input type="text" value={formData.lineUserId || ''} disabled className="w-full border p-2.5 rounded-xl bg-slate-50 text-slate-400 font-mono text-sm" placeholder="ไม่มีข้อมูล" /></div>
+                </div>
               </div>
+
               <div className="flex justify-end gap-3 pt-5 border-t border-indigo-100"><button type="button" onClick={handleCloseForm} className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition">ยกเลิก</button><button type="submit" disabled={isLoading} className="px-8 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition flex items-center gap-2"><Save size={18}/>{isLoading ? 'กำลังประมวลผล...' : (isEditing ? 'แก้ไขข้อมูล' : 'บันทึกข้อมูล')}</button></div>
             </form>
           </div>
@@ -354,7 +412,10 @@ const MembersView = () => {
                 filteredMembers.map((m) => (
                   <tr key={m.id} className="hover:bg-slate-50 transition-colors group">
                     <td className="p-4 text-center"><div className="w-14 h-14 rounded-full overflow-hidden bg-slate-200 mx-auto border-4 border-white shadow-md flex items-center justify-center">{m.imageUrl ? ( <img src={m.imageUrl} alt={m.firstName} className="w-full h-full object-cover" onError={(e: any) => e.target.src = 'https://via.placeholder.com/150'} /> ) : ( <ImageIcon size={24} className="text-slate-400" /> )}</div></td>
-                    <td className="p-4"><p className="font-bold text-slate-800 text-base">{m.firstName} {m.lastName}</p><p className="text-xs text-slate-500 font-medium mt-1">ชื่อเล่น: <span className="text-indigo-600 font-bold">{m.nickname || '-'}</span></p></td>
+                    <td className="p-4">
+                      <p className="font-bold text-slate-800 text-base">{m.firstName} {m.lastName}</p>
+                      <p className="text-xs text-slate-500 font-medium mt-1">ชื่อเล่น: <span className="text-indigo-600 font-bold">{m.nickname || '-'}</span> {m.lineUserId && <span className="ml-2 bg-[#06C755] text-white text-[10px] px-1.5 py-0.5 rounded">LINE</span>}</p>
+                    </td>
                     <td className="p-4"><p className="font-bold text-indigo-700 text-sm">{m.position}</p></td>
                     <td className="p-4"><p className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{m.affiliation}</p><p className="text-xs text-orange-700 font-bold mt-1.5 bg-orange-100 inline-block px-2.5 py-1 rounded-full">อ.{m.district}</p></td>
                     <td className="p-4"><p className="font-mono text-slate-700 font-bold text-base">{m.phone}</p></td>
@@ -506,6 +567,7 @@ const PlaceholderView = ({ title, desc, icon: Icon, color }: any) => (
     <div className="flex-1 flex flex-col items-center justify-center bg-white rounded-3xl border border-slate-200 border-dashed p-10 text-center"><div className={`p-6 rounded-full ${color} mb-6`}><Icon size={64} className="text-white" /></div><h2 className="text-2xl font-bold text-slate-800 mb-2">{title}</h2><p className="text-slate-500 max-w-md">{desc}</p></div>
   </PageTemplate>
 );
+
 // ==========================================
 // 🚀 ตัวดักจับลิงก์จาก LINE LIFF
 // ==========================================
@@ -513,7 +575,6 @@ const LiffHelper = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // ตรวจสอบว่าใน URL มีคำว่า ?mode=register หรือไม่ (รวมถึงที่ LINE ชอบซ่อนไว้ใน liff.state ด้วย)
     const searchParams = new URLSearchParams(window.location.search);
     const mode = searchParams.get('mode');
     const liffState = searchParams.get('liff.state'); 
@@ -527,14 +588,12 @@ const LiffHelper = () => {
 };
 
 // ==========================================
-// 4. Router (Main App)
+// 4. Router
 // ==========================================
 export default function App() {
   return (
     <Router>
-      {/* 🚀 วางตัวดักจับไว้ตรงนี้ */}
       <LiffHelper /> 
-      
       <Routes>
         <Route path="/" element={<HomeView />} />
         <Route path="/dashboard" element={<DashboardView />} />
@@ -543,7 +602,6 @@ export default function App() {
         <Route path="/attendance" element={<AttendanceView />} />
         <Route path="/register" element={<LineRegisterView />} />
         
-        <Route path="/notifications" element={<PlaceholderView title="🔔 แจ้งเตือนผ่าน Line OA" desc="ตั้งค่าและส่งข้อความแจ้งเตือนเข้ามือถือสมาชิกโดยตรง" icon={Bell} color="bg-pink-500" />} />
         <Route path="/settings" element={<PlaceholderView title="⚙️ ตั้งค่าระบบ" desc="จัดการสิทธิ์ผู้ใช้งาน แอดมิน และตั้งค่าอื่นๆ" icon={Settings} color="bg-slate-700" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
