@@ -7,7 +7,6 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } f
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getAnalytics } from "firebase/analytics";
 import liff from '@line/liff';
 import { 
   LayoutDashboard, Users, Calendar, CheckCircle, 
@@ -21,14 +20,12 @@ const firebaseConfig = {
   projectId: "lampun",
   storageBucket: "lampun.firebasestorage.app",
   messagingSenderId: "296901888521",
-  appId: "1:296901888521:web:9b0f3aff13e1409f6c06d8",
-  measurementId: "G-HC994B0JYJ"
+  appId: "1:296901888521:web:9b0f3aff13e1409f6c06d8"
 };
 
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
 const LIFF_ID = "2009629879-g33kYPK0"; // LIFF ID ของคุณ
 
@@ -75,7 +72,7 @@ const PageTemplate = ({ title, children }: any) => {
 };
 
 // ==========================================
-// 🌟 หน้าสำหรับ LINE LIFF: สมัครสมาชิก (13 หัวข้อ)
+// 🌟 หน้าสำหรับ LINE LIFF: สมัครสมาชิก (แยกขาดจาก Router ปกติ)
 // ==========================================
 const LineRegisterView = () => {
   const [profile, setProfile] = useState<any>(null);
@@ -92,25 +89,20 @@ const LineRegisterView = () => {
   const districts = ['เมืองลำพูน', 'ป่าซาง', 'แม่ทา', 'บ้านโฮ่ง', 'ลี้', 'ทุ่งหัวช้าง', 'บ้านธิ', 'เวียงหนองล่อง'];
 
   useEffect(() => {
-    const initLiff = async () => {
-      try {
-        await liff.init({ liffId: LIFF_ID });
-        if (liff.isLoggedIn()) {
-          const p = await liff.getProfile();
-          setProfile(p);
-          setFormData(prev => ({ ...prev, imageUrl: p.pictureUrl || '' }));
-        } else {
-          // 🚀 บังคับว่าถ้าต้องไปหน้า Login ของ LINE พอกลับมาต้องเข้าหน้าฟอร์มเท่านั้น
-          const redirectUrl = window.location.origin + '/?register=true';
-          liff.login({ redirectUri: redirectUrl });
-        }
-      } catch (err) {
-        console.error("LIFF Init Error", err);
-      } finally {
+    // 🚀 ระบบ LIFF Init ถูกรันมาตั้งแต่ไฟล์ระดับนอกสุดแล้ว เราแค่ดึงค่ามาใช้
+    if (liff.isLoggedIn()) {
+      liff.getProfile().then(p => {
+        setProfile(p);
+        setFormData(prev => ({ ...prev, imageUrl: p.pictureUrl || '' }));
         setIsLoading(false);
-      }
-    };
-    initLiff();
+      }).catch(err => {
+        console.error(err);
+        setIsLoading(false);
+      });
+    } else {
+      // ถ้าเปิดจากบราวเซอร์นอกไลน์ ให้บังคับ Login
+      liff.login({ redirectUri: window.location.href });
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,7 +121,7 @@ const LineRegisterView = () => {
     setIsSaving(false);
   };
 
-  if (isLoading) return <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6"><div className="text-4xl animate-bounce mb-4 text-[#06C755]">💬</div><p className="font-bold text-slate-600">กำลังเตรียมพร้อมระบบ...</p></div>;
+  if (isLoading) return <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6"><div className="text-4xl animate-bounce mb-4 text-[#06C755]">💬</div><p className="font-bold text-slate-600">กำลังดึงข้อมูล LINE...</p></div>;
 
   if (isRegistered) return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
@@ -162,6 +154,7 @@ const LineRegisterView = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* ข้อมูลสภาฯ */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
             <h3 className="font-bold text-slate-800 text-sm border-b pb-2">📌 ข้อมูลสภาเด็กและเยาวชน</h3>
             <div>
@@ -179,6 +172,7 @@ const LineRegisterView = () => {
             </div>
           </div>
 
+          {/* ข้อมูลส่วนตัว */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
             <h3 className="font-bold text-slate-800 text-sm border-b pb-2">👤 ข้อมูลส่วนบุคคล</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -195,6 +189,7 @@ const LineRegisterView = () => {
             </div>
           </div>
 
+          {/* การติดต่อ */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
             <h3 className="font-bold text-slate-800 text-sm border-b pb-2">📍 ข้อมูลการติดต่อ</h3>
             <div><label className="block text-xs font-bold text-slate-700 mb-1">อำเภอที่พักอาศัย *</label><select value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm font-bold text-slate-700 bg-white">{districts.map(d => <option key={d} value={d}>อ.{d}</option>)}</select></div>
@@ -220,17 +215,19 @@ const HomeView = () => (
   <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden">
     <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
     <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
+
     <div className="mb-10 text-center relative z-10 flex flex-col items-center">
       <img src="https://i.postimg.cc/3RwSgrwg/c021db22-1797-4ccf-a2fd-cc7edfcb0cb7.jpg" alt="โลโก้ สภาเด็กและเยาวชนลำพูน" className="h-28 md:h-36 w-auto mb-6 mx-auto drop-shadow-xl animate-in fade-in slide-in-from-top-4 duration-1000 rounded-full" />
       <h1 className="text-4xl md:text-5xl font-extrabold mb-3 tracking-tight bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent drop-shadow-sm">สภาเด็กและเยาวชนลำพูน</h1>
       <p className="text-slate-500 font-medium bg-white/50 px-4 py-1 rounded-full inline-block shadow-sm">ระบบบริหารจัดการข้อมูลสมาชิกและการประชุม</p>
     </div>
+    
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8 max-w-4xl w-full relative z-10">
       <AppIcon icon={LayoutDashboard} label="ภาพรวม" path="/dashboard" color="bg-gradient-to-br from-blue-500 to-blue-600" />
       <AppIcon icon={Users} label="ระบบสมาชิก" path="/members" color="bg-gradient-to-br from-indigo-500 to-indigo-600" />
       <AppIcon icon={CheckCircle} label="เช็คชื่อเข้าประชุม" path="/attendance" color="bg-gradient-to-br from-emerald-500 to-emerald-600" />
       <AppIcon icon={Calendar} label="ปฏิทินกิจกรรม" path="/calendar" color="bg-gradient-to-br from-orange-500 to-orange-600" />
-      <AppIcon icon={Smartphone} label="หน้าจอ LIFF" path="/register" color="bg-gradient-to-br from-[#06C755] to-[#05b34c]" />
+      {/* 🚀 ซ่อนปุ่ม LIFF ออกจากหน้าหลัก เพราะแอดมินไม่จำเป็นต้องเข้าจากตรงนี้ */}
       <AppIcon icon={Settings} label="ตั้งค่าระบบ" path="/settings" color="bg-gradient-to-br from-slate-700 to-slate-800" />
     </div>
   </div>
@@ -382,6 +379,7 @@ const MembersView = () => {
                   <div className="md:col-span-3"><label className="block text-xs font-bold text-slate-400 mb-1">LINE User ID (ระบบดึงอัตโนมัติ)</label><input type="text" value={formData.lineUserId || ''} disabled className="w-full border p-2.5 rounded-xl bg-slate-50 text-slate-400 font-mono text-sm" placeholder="ไม่มีข้อมูล" /></div>
                 </div>
               </div>
+
               <div className="flex justify-end gap-3 pt-5 border-t border-indigo-100"><button type="button" onClick={handleCloseForm} className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition">ยกเลิก</button><button type="submit" disabled={isLoading} className="px-8 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition flex items-center gap-2"><Save size={18}/>{isLoading ? 'กำลังประมวลผล...' : (isEditing ? 'แก้ไขข้อมูล' : 'บันทึกข้อมูล')}</button></div>
             </form>
           </div>
@@ -395,7 +393,10 @@ const MembersView = () => {
                 filteredMembers.map((m) => (
                   <tr key={m.id} className="hover:bg-slate-50 transition-colors group">
                     <td className="p-4 text-center"><div className="w-14 h-14 rounded-full overflow-hidden bg-slate-200 mx-auto border-4 border-white shadow-md flex items-center justify-center">{m.imageUrl ? ( <img src={m.imageUrl} alt={m.firstName} className="w-full h-full object-cover" onError={(e: any) => e.target.src = 'https://via.placeholder.com/150'} /> ) : ( <ImageIcon size={24} className="text-slate-400" /> )}</div></td>
-                    <td className="p-4"><p className="font-bold text-slate-800 text-base">{m.firstName} {m.lastName}</p><p className="text-xs text-slate-500 font-medium mt-1">ชื่อเล่น: <span className="text-indigo-600 font-bold">{m.nickname || '-'}</span> {m.lineUserId && <span className="ml-2 bg-[#06C755] text-white text-[10px] px-1.5 py-0.5 rounded">LINE</span>}</p></td>
+                    <td className="p-4">
+                      <p className="font-bold text-slate-800 text-base">{m.firstName} {m.lastName}</p>
+                      <p className="text-xs text-slate-500 font-medium mt-1">ชื่อเล่น: <span className="text-indigo-600 font-bold">{m.nickname || '-'}</span> {m.lineUserId && <span className="ml-2 bg-[#06C755] text-white text-[10px] px-1.5 py-0.5 rounded">LINE</span>}</p>
+                    </td>
                     <td className="p-4"><p className="font-bold text-indigo-700 text-sm">{m.position}</p></td>
                     <td className="p-4"><p className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{m.affiliation}</p><p className="text-xs text-orange-700 font-bold mt-1.5 bg-orange-100 inline-block px-2.5 py-1 rounded-full">อ.{m.district}</p></td>
                     <td className="p-4"><p className="font-mono text-slate-700 font-bold text-base">{m.phone}</p></td>
@@ -461,6 +462,7 @@ const CalendarView = () => {
           </div>
           <button onClick={() => { setFormData({...initialForm, date: new Date().toISOString().split('T')[0]}); setEditingId(null); setIsModalOpen(true); }} className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition shadow-sm"><Plus size={18} /> เพิ่มกิจกรรม</button>
         </div>
+
         <div className="flex-1 flex flex-col bg-slate-200 border border-slate-200 rounded-2xl overflow-hidden">
           <div className="grid grid-cols-7 gap-px bg-slate-200">{dayNames.map(d => (<div key={d} className="bg-slate-50 py-3 text-center text-xs font-bold text-slate-500 uppercase">{d}</div>))}</div>
           <div className="grid grid-cols-7 gap-px bg-slate-200 flex-1 min-h-[500px]">
@@ -544,17 +546,29 @@ const PlaceholderView = ({ title, desc, icon: Icon, color }: any) => (
 );
 
 // ==========================================
-// 4. Router & Main Entry
+// 4. โครงสร้างแอป (แยกหน้า Register ออกจาก Router เด็ดขาด 100%)
 // ==========================================
 export default function App() {
-  // 🚀 เช็คตั้งแต่ตัวแอปเกิดเลยว่ามี parameter register=true ไหม
-  const [isLiffMode] = useState(() => window.location.search.includes('register=true'));
+  const [isLiffInit, setIsLiffInit] = useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
 
-  // 🚀 ถ้าใช่โหมด LIFF ให้คืนค่าเฉพาะหน้าสม้ครเลย ไม่ส่งให้ Router (ไม่มีทางเด้งไปหน้าอื่นได้อีก!)
-  if (isLiffMode) {
+  useEffect(() => {
+    // ให้ระบบเช็คก่อนเลยว่ามีเจตนาจะเข้าหน้า register ไหม?
+    const currentUrl = window.location.href;
+    if (currentUrl.includes('register')) {
+      setIsRegisterMode(true);
+    }
+    setIsLiffInit(true);
+  }, []);
+
+  if (!isLiffInit) return <div className="min-h-screen bg-slate-50 flex items-center justify-center">กำลังเตรียมระบบ...</div>;
+
+  // 🚀 ถ้าเป็นโหมด Register โยนไปคอมโพเนนต์ LINE ทันที โดยไม่สน Router ใดๆ ทั้งสิ้น
+  if (isRegisterMode) {
     return <LineRegisterView />;
   }
 
+  // 🚀 ถ้าไม่ใช่ (เข้าจากแอดมิน) ถึงจะอนุญาตให้ใช้ Router ของเว็บปกติ
   return (
     <Router>
       <Routes>
@@ -563,10 +577,6 @@ export default function App() {
         <Route path="/members" element={<MembersView />} />
         <Route path="/calendar" element={<CalendarView />} />
         <Route path="/attendance" element={<AttendanceView />} />
-        
-        {/* ให้เข้าผ่านเว็บตรงๆ ได้ด้วย สำหรับแอดมินทดสอบ */}
-        <Route path="/register" element={<LineRegisterView />} />
-        
         <Route path="/settings" element={<PlaceholderView title="⚙️ ตั้งค่าระบบ" desc="จัดการสิทธิ์ผู้ใช้งาน แอดมิน และตั้งค่าอื่นๆ" icon={Settings} color="bg-slate-700" />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
