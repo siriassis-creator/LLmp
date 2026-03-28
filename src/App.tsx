@@ -98,11 +98,11 @@ const LineRegisterView = () => {
         if (liff.isLoggedIn()) {
           const p = await liff.getProfile();
           setProfile(p);
-          // 🚀 ดึงรูปลง Form อัตโนมัติ (ถ้าไม่มีให้เป็นค่าว่าง)
           setFormData(prev => ({ ...prev, imageUrl: p.pictureUrl || '' }));
         } else {
-          // บังคับล็อกอิน แล้วเด้งกลับมาหน้า register อย่างปลอดภัย
-          liff.login({ redirectUri: window.location.origin + '?liff.state=/register' });
+          // 🚀 บังคับว่าถ้าต้องไปหน้า Login ของ LINE พอกลับมาต้องเข้าหน้าฟอร์มเท่านั้น
+          const redirectUrl = window.location.origin + '/?register=true';
+          liff.login({ redirectUri: redirectUrl });
         }
       } catch (err) {
         console.error("LIFF Init Error", err);
@@ -129,7 +129,7 @@ const LineRegisterView = () => {
     setIsSaving(false);
   };
 
-  if (isLoading) return <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6"><div className="text-4xl animate-bounce mb-4 text-[#06C755]">💬</div><p className="font-bold text-slate-600">กำลังเชื่อมต่อ LINE...</p></div>;
+  if (isLoading) return <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6"><div className="text-4xl animate-bounce mb-4 text-[#06C755]">💬</div><p className="font-bold text-slate-600">กำลังเตรียมพร้อมระบบ...</p></div>;
 
   if (isRegistered) return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
@@ -162,17 +162,13 @@ const LineRegisterView = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* ข้อมูลสภาฯ */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
             <h3 className="font-bold text-slate-800 text-sm border-b pb-2">📌 ข้อมูลสภาเด็กและเยาวชน</h3>
-            
-            {/* 🚀 แก้ปัญหาการกรอกรูป: ดึงอัตโนมัติ ล็อกไม่ให้แก้ และไม่ต้องบังคับ required */}
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">รูปโปรไฟล์ (ระบบดึงจาก LINE ให้อัตโนมัติ)</label>
-              <input type="text" value={formData.imageUrl} readOnly className="w-full px-3 py-2 border rounded-xl bg-slate-100 text-slate-400 text-xs focus:outline-none cursor-not-allowed" placeholder="ไม่มีข้อมูลรูปภาพ" />
+              <label className="block text-xs font-bold text-slate-700 mb-1">รูปถ่ายโปรไฟล์ (ดึงจาก LINE อัตโนมัติ)</label>
+              <input type="text" value={formData.imageUrl} readOnly className="w-full px-3 py-2 border rounded-xl bg-slate-100 text-slate-400 text-xs focus:outline-none cursor-not-allowed" placeholder="ไม่มีรูปภาพโปรไฟล์" />
             </div>
-
-            <div><label className="block text-xs font-bold text-slate-700 mb-1">เลขประจำตัวสมาชิกสภาเด็กและเยาวชน</label><input type="text" value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" placeholder="เว้นว่างไว้หากยังไม่มี" /></div>
+            <div><label className="block text-xs font-bold text-slate-700 mb-1">เลขประจำตัวสมาชิก</label><input type="text" value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" placeholder="เว้นว่างไว้หากยังไม่มี" /></div>
             <div><label className="block text-xs font-bold text-slate-700 mb-1">ตำแหน่ง *</label><input required type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" placeholder="เช่น ประธาน, สมาชิกทั่วไป" /></div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">สังกัด *</label>
@@ -183,7 +179,6 @@ const LineRegisterView = () => {
             </div>
           </div>
 
-          {/* ข้อมูลส่วนตัว */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
             <h3 className="font-bold text-slate-800 text-sm border-b pb-2">👤 ข้อมูลส่วนบุคคล</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -200,7 +195,6 @@ const LineRegisterView = () => {
             </div>
           </div>
 
-          {/* การติดต่อ */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
             <h3 className="font-bold text-slate-800 text-sm border-b pb-2">📍 ข้อมูลการติดต่อ</h3>
             <div><label className="block text-xs font-bold text-slate-700 mb-1">อำเภอที่พักอาศัย *</label><select value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm font-bold text-slate-700 bg-white">{districts.map(d => <option key={d} value={d}>อ.{d}</option>)}</select></div>
@@ -226,13 +220,11 @@ const HomeView = () => (
   <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden">
     <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
     <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-orange-500/20 rounded-full blur-3xl pointer-events-none"></div>
-
     <div className="mb-10 text-center relative z-10 flex flex-col items-center">
       <img src="https://i.postimg.cc/3RwSgrwg/c021db22-1797-4ccf-a2fd-cc7edfcb0cb7.jpg" alt="โลโก้ สภาเด็กและเยาวชนลำพูน" className="h-28 md:h-36 w-auto mb-6 mx-auto drop-shadow-xl animate-in fade-in slide-in-from-top-4 duration-1000 rounded-full" />
       <h1 className="text-4xl md:text-5xl font-extrabold mb-3 tracking-tight bg-gradient-to-r from-blue-700 to-blue-500 bg-clip-text text-transparent drop-shadow-sm">สภาเด็กและเยาวชนลำพูน</h1>
       <p className="text-slate-500 font-medium bg-white/50 px-4 py-1 rounded-full inline-block shadow-sm">ระบบบริหารจัดการข้อมูลสมาชิกและการประชุม</p>
     </div>
-    
     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-8 max-w-4xl w-full relative z-10">
       <AppIcon icon={LayoutDashboard} label="ภาพรวม" path="/dashboard" color="bg-gradient-to-br from-blue-500 to-blue-600" />
       <AppIcon icon={Users} label="ระบบสมาชิก" path="/members" color="bg-gradient-to-br from-indigo-500 to-indigo-600" />
@@ -273,7 +265,6 @@ const DashboardView = () => {
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center justify-between"><div><h4 className="text-slate-500 font-bold text-sm uppercase">กิจกรรมเดือนนี้</h4><p className="text-4xl font-black text-orange-500 mt-2">{eventsThisMonth} <span className="text-lg text-slate-400">ครั้ง</span></p></div><Calendar size={48} className="text-orange-100" /></div>
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center justify-between"><div><h4 className="text-slate-500 font-bold text-sm uppercase">สถานะเชื่อมต่อ</h4><p className="text-2xl font-black text-emerald-500 mt-2">Online</p></div><CheckCircle size={48} className="text-emerald-100" /></div>
       </div>
-      
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-3xl shadow-sm border border-slate-200 flex flex-col">
           <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-orange-50/50 rounded-t-3xl"><h3 className="text-lg font-bold text-orange-800 flex items-center gap-2"><Calendar size={20} className="text-orange-600" /> กิจกรรมเร็วๆ นี้</h3><Link to="/calendar" className="text-sm font-bold text-orange-600 hover:text-orange-700">ดูปฏิทิน</Link></div>
@@ -359,20 +350,16 @@ const MembersView = () => {
             </div>
 
             <form onSubmit={handleSaveMember} className="space-y-6">
-              {/* ข้อมูลสภาฯ */}
               <div className="bg-white p-4 rounded-xl border border-slate-200">
                 <h4 className="font-bold text-slate-600 text-sm mb-3">📌 ข้อมูลสภาเด็กและเยาวชน</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                  {/* 🚀 แก้ไข: ปลดล็อค input url ให้พิมพ์แก้ได้ ไม่ได้บังคับ required */}
                   <div className="md:col-span-2 xl:col-span-4"><label className="block text-xs font-bold text-slate-700 mb-1">ลิงก์ URL รูปถ่าย</label><input type="text" placeholder="https://... หรือปล่อยว่างไว้" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
-                  
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">เลขประจำตัวสมาชิก</label><input type="text" value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
                   <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">ตำแหน่ง *</label><input required type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" /></div>
                   <div className="md:col-span-2 xl:col-span-4"><label className="block text-xs font-bold text-slate-700 mb-1">สังกัด *</label><select value={formData.affiliation} onChange={e => setFormData({...formData, affiliation: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm font-bold text-indigo-800 bg-white"><option value="คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน">สังกัด คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน</option><option value="คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน">สังกัด คณะทำงานสภาเด็กและเยาวชนจังหวัดลำพูน</option></select></div>
                 </div>
               </div>
 
-              {/* ข้อมูลส่วนบุคคล */}
               <div className="bg-white p-4 rounded-xl border border-slate-200">
                 <h4 className="font-bold text-slate-600 text-sm mb-3">👤 ข้อมูลส่วนบุคคล</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-4">
@@ -385,7 +372,6 @@ const MembersView = () => {
                 </div>
               </div>
 
-              {/* การติดต่อ */}
               <div className="bg-white p-4 rounded-xl border border-slate-200">
                 <h4 className="font-bold text-slate-600 text-sm mb-3">📍 ข้อมูลการติดต่อ</h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -393,12 +379,9 @@ const MembersView = () => {
                   <div className="md:col-span-2"><label className="block text-xs font-bold text-slate-700 mb-1">ที่อยู่แบบเต็ม</label><input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="บ้านเลขที่ หมู่ หมู่บ้าน ตำบล" /></div>
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ติดต่อ *</label><input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="08X-XXX-XXXX" /></div>
                   <div className="md:col-span-2"><label className="block text-xs font-bold text-red-600 mb-1">เบอร์ติดต่อฉุกเฉิน *</label><input required type="tel" value={formData.emergencyPhone} onChange={e => setFormData({...formData, emergencyPhone: e.target.value})} className="w-full border border-red-200 bg-red-50 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-red-400 text-sm" placeholder="เบอร์ผู้ปกครอง/ญาติ" /></div>
-                  
-                  {/* แสดง LINE ID แต่ห้ามแก้ */}
                   <div className="md:col-span-3"><label className="block text-xs font-bold text-slate-400 mb-1">LINE User ID (ระบบดึงอัตโนมัติ)</label><input type="text" value={formData.lineUserId || ''} disabled className="w-full border p-2.5 rounded-xl bg-slate-50 text-slate-400 font-mono text-sm" placeholder="ไม่มีข้อมูล" /></div>
                 </div>
               </div>
-
               <div className="flex justify-end gap-3 pt-5 border-t border-indigo-100"><button type="button" onClick={handleCloseForm} className="px-6 py-2.5 text-slate-600 font-bold hover:bg-slate-200 rounded-xl transition">ยกเลิก</button><button type="submit" disabled={isLoading} className="px-8 py-2.5 bg-indigo-600 text-white font-bold rounded-xl shadow-md hover:bg-indigo-700 transition flex items-center gap-2"><Save size={18}/>{isLoading ? 'กำลังประมวลผล...' : (isEditing ? 'แก้ไขข้อมูล' : 'บันทึกข้อมูล')}</button></div>
             </form>
           </div>
@@ -412,10 +395,7 @@ const MembersView = () => {
                 filteredMembers.map((m) => (
                   <tr key={m.id} className="hover:bg-slate-50 transition-colors group">
                     <td className="p-4 text-center"><div className="w-14 h-14 rounded-full overflow-hidden bg-slate-200 mx-auto border-4 border-white shadow-md flex items-center justify-center">{m.imageUrl ? ( <img src={m.imageUrl} alt={m.firstName} className="w-full h-full object-cover" onError={(e: any) => e.target.src = 'https://via.placeholder.com/150'} /> ) : ( <ImageIcon size={24} className="text-slate-400" /> )}</div></td>
-                    <td className="p-4">
-                      <p className="font-bold text-slate-800 text-base">{m.firstName} {m.lastName}</p>
-                      <p className="text-xs text-slate-500 font-medium mt-1">ชื่อเล่น: <span className="text-indigo-600 font-bold">{m.nickname || '-'}</span> {m.lineUserId && <span className="ml-2 bg-[#06C755] text-white text-[10px] px-1.5 py-0.5 rounded">LINE</span>}</p>
-                    </td>
+                    <td className="p-4"><p className="font-bold text-slate-800 text-base">{m.firstName} {m.lastName}</p><p className="text-xs text-slate-500 font-medium mt-1">ชื่อเล่น: <span className="text-indigo-600 font-bold">{m.nickname || '-'}</span> {m.lineUserId && <span className="ml-2 bg-[#06C755] text-white text-[10px] px-1.5 py-0.5 rounded">LINE</span>}</p></td>
                     <td className="p-4"><p className="font-bold text-indigo-700 text-sm">{m.position}</p></td>
                     <td className="p-4"><p className="text-xs font-bold text-slate-700 truncate max-w-[200px]">{m.affiliation}</p><p className="text-xs text-orange-700 font-bold mt-1.5 bg-orange-100 inline-block px-2.5 py-1 rounded-full">อ.{m.district}</p></td>
                     <td className="p-4"><p className="font-mono text-slate-700 font-bold text-base">{m.phone}</p></td>
@@ -450,9 +430,6 @@ const CalendarView = () => {
   const month = currentDate.getMonth(); 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay(); 
-  
-  const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
-  const dayNames = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
   const emptyCells: any[] = Array.from({ length: firstDayOfMonth }, () => null);
   const dayCells: any[] = Array.from({ length: daysInMonth }, (_, i) => i + 1);
   const calendarCells: any[] = [...emptyCells, ...dayCells];
@@ -484,7 +461,6 @@ const CalendarView = () => {
           </div>
           <button onClick={() => { setFormData({...initialForm, date: new Date().toISOString().split('T')[0]}); setEditingId(null); setIsModalOpen(true); }} className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition shadow-sm"><Plus size={18} /> เพิ่มกิจกรรม</button>
         </div>
-
         <div className="flex-1 flex flex-col bg-slate-200 border border-slate-200 rounded-2xl overflow-hidden">
           <div className="grid grid-cols-7 gap-px bg-slate-200">{dayNames.map(d => (<div key={d} className="bg-slate-50 py-3 text-center text-xs font-bold text-slate-500 uppercase">{d}</div>))}</div>
           <div className="grid grid-cols-7 gap-px bg-slate-200 flex-1 min-h-[500px]">
@@ -504,7 +480,6 @@ const CalendarView = () => {
           </div>
         </div>
       </div>
-
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"><div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col"><div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-orange-50"><div className="flex items-center gap-3"><Calendar className="text-orange-600" size={24}/><h3 className="font-bold text-lg text-orange-900">{editingId ? 'แก้ไขกิจกรรม' : 'เพิ่มกิจกรรมใหม่'}</h3></div><button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-orange-200 rounded-full text-slate-500"><X size={20} /></button></div><form onSubmit={handleSaveEvent} className="p-6 space-y-4"><div><input required type="text" placeholder="เพิ่มชื่อกิจกรรม *" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full border-b-2 border-slate-200 px-2 py-3 outline-none focus:border-orange-500 text-xl font-bold text-slate-800" /></div><div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100"><Clock className="text-slate-400" size={20} /><input required type="date" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} className="border p-2 rounded-xl text-sm font-bold text-slate-700 outline-none" /><div className="flex items-center gap-2"><input required type="time" value={formData.startTime} onChange={e => setFormData({...formData, startTime: e.target.value})} className="border p-2 rounded-xl text-sm font-bold text-slate-700 outline-none" /><span className="text-slate-400">-</span><input required type="time" value={formData.endTime} onChange={e => setFormData({...formData, endTime: e.target.value})} className="border p-2 rounded-xl text-sm font-bold text-slate-700 outline-none" /></div></div><div className="flex items-center gap-4 px-2"><MapPin className="text-slate-400" size={20} /><input type="text" placeholder="เพิ่มสถานที่" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full border-b border-slate-200 py-2 outline-none focus:border-orange-500 text-sm" /></div><div className="flex items-start gap-4 px-2"><FileText className="text-slate-400 mt-2" size={20} /><textarea rows={3} placeholder="คำอธิบายรายละเอียด..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full border-b border-slate-200 py-2 outline-none focus:border-orange-500 text-sm resize-none" /></div><div className="flex justify-between items-center pt-6 mt-4">{editingId ? (<button type="button" onClick={async () => { if (window.confirm('ลบ?')) { await deleteDoc(doc(db, 'events', editingId)); setIsModalOpen(false); } }} className="text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl font-bold transition flex items-center gap-2"><Trash2 size={18}/> ลบกิจกรรม</button>) : <div/>}<div className="flex gap-2"><button type="button" onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 text-slate-600 font-bold hover:bg-slate-100 rounded-xl transition">ยกเลิก</button><button type="submit" disabled={isLoading} className="px-6 py-2.5 bg-orange-500 text-white font-bold rounded-xl shadow-md hover:bg-orange-600 transition">บันทึก</button></div></div></form></div></div>
       )}
@@ -569,37 +544,27 @@ const PlaceholderView = ({ title, desc, icon: Icon, color }: any) => (
 );
 
 // ==========================================
-// 🚀 ตัวดักจับลิงก์จาก LINE LIFF แบบใหม่ (ใช้ Routing ปกติ)
-// ==========================================
-const LiffHelper = () => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    // โค้ดดักจับ URL จะดูว่ามีความตั้งใจจะเข้า /register หรือไม่
-    // ตอนนี้เราแก้ปัญหาที่ต้นตอด้วย window.history.replaceState ไว้บนสุดของไฟล์แล้ว 
-    // ตัวนี้ทำหน้าที่แค่เช็คอีกรอบเพื่อความชัวร์ว่าเราอยู่ถูกหน้า
-    const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.get('mode') === 'register') {
-      navigate('/register', { replace: true });
-    }
-  }, [navigate]);
-
-  return null;
-};
-
-// ==========================================
-// 4. Router
+// 4. Router & Main Entry
 // ==========================================
 export default function App() {
+  // 🚀 เช็คตั้งแต่ตัวแอปเกิดเลยว่ามี parameter register=true ไหม
+  const [isLiffMode] = useState(() => window.location.search.includes('register=true'));
+
+  // 🚀 ถ้าใช่โหมด LIFF ให้คืนค่าเฉพาะหน้าสม้ครเลย ไม่ส่งให้ Router (ไม่มีทางเด้งไปหน้าอื่นได้อีก!)
+  if (isLiffMode) {
+    return <LineRegisterView />;
+  }
+
   return (
     <Router>
-      <LiffHelper /> 
       <Routes>
         <Route path="/" element={<HomeView />} />
         <Route path="/dashboard" element={<DashboardView />} />
         <Route path="/members" element={<MembersView />} />
         <Route path="/calendar" element={<CalendarView />} />
         <Route path="/attendance" element={<AttendanceView />} />
+        
+        {/* ให้เข้าผ่านเว็บตรงๆ ได้ด้วย สำหรับแอดมินทดสอบ */}
         <Route path="/register" element={<LineRegisterView />} />
         
         <Route path="/settings" element={<PlaceholderView title="⚙️ ตั้งค่าระบบ" desc="จัดการสิทธิ์ผู้ใช้งาน แอดมิน และตั้งค่าอื่นๆ" icon={Settings} color="bg-slate-700" />} />
