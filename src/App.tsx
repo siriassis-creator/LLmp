@@ -2,17 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 
 // ==========================================
-// 1. Firebase Configuration (สภาเด็กและเยาวชน จ.ลำพูน)
+// 🚀 ดักจับลิงก์ของ LINE ทันทีก่อนที่เว็บจะเริ่มทำงาน (แก้ปัญหาจอกระพริบเตะไปหน้าแรก)
+// ==========================================
+const searchParams = new URLSearchParams(window.location.search);
+const liffState = searchParams.get('liff.state');
+if (liffState) {
+  const decodedPath = decodeURIComponent(liffState);
+  window.history.replaceState(null, '', decodedPath);
+}
+
+// ==========================================
+// 1. Firebase Configuration
 // ==========================================
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, onSnapshot, query, orderBy, addDoc, updateDoc, deleteDoc, doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
-
-// นำเข้า LINE LIFF
 import liff from '@line/liff';
-
-// นำเข้า Icons จาก lucide-react
 import { 
   LayoutDashboard, Users, Calendar, CheckCircle, 
   Settings, LogOut, ChevronLeft, ChevronRight, Bell, UserPlus, 
@@ -34,8 +40,7 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
-// 🚀 LIFF ID ปัจจุบันของคุณ
-const LIFF_ID = "2009629879-g33kYPK0"; 
+const LIFF_ID = "2009629879-g33kYPK0"; // LIFF ID ของคุณ
 
 // ==========================================
 // 2. Components ย่อย (UI)
@@ -80,7 +85,7 @@ const PageTemplate = ({ title, children }: any) => {
 };
 
 // ==========================================
-// 🌟 หน้าสำหรับ LINE LIFF: สมัครสมาชิก (13 หัวข้อ)
+// 🌟 หน้าสำหรับ LINE LIFF: สมัครสมาชิก
 // ==========================================
 const LineRegisterView = () => {
   const [profile, setProfile] = useState<any>(null);
@@ -105,8 +110,8 @@ const LineRegisterView = () => {
           setProfile(p);
           setFormData(prev => ({ ...prev, imageUrl: p.pictureUrl || '' }));
         } else {
-          const redirectUrl = window.location.origin + '/?mode=register';
-          liff.login({ redirectUri: redirectUrl });
+          // ถ้ายังไม่ login ให้บังคับกลับมาที่หน้า register เสมอ
+          liff.login({ redirectUri: window.location.origin + '/register' });
         }
       } catch (err) {
         console.error("LIFF Init Error", err);
@@ -123,7 +128,7 @@ const LineRegisterView = () => {
     try {
       await addDoc(collection(db, 'members'), {
         ...formData,
-        lineUserId: profile?.userId || '', // 🚀 เก็บ Line User ID ตรงนี้
+        lineUserId: profile?.userId || '',
         createdAt: serverTimestamp()
       });
       setIsRegistered(true);
@@ -133,7 +138,7 @@ const LineRegisterView = () => {
     setIsSaving(false);
   };
 
-  if (isLoading) return <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6"><div className="text-4xl animate-bounce mb-4 text-[#06C755]">💬</div><p className="font-bold text-slate-600">กำลังเชื่อมต่อ LINE...</p></div>;
+  if (isLoading) return <div className="min-h-screen bg-slate-100 flex flex-col items-center justify-center p-6"><div className="text-4xl animate-bounce mb-4 text-[#06C755]">💬</div><p className="font-bold text-slate-600">กำลังเตรียมพร้อมระบบ...</p></div>;
 
   if (isRegistered) return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center p-6">
@@ -169,7 +174,13 @@ const LineRegisterView = () => {
           {/* ข้อมูลสภาฯ */}
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-4">
             <h3 className="font-bold text-slate-800 text-sm border-b pb-2">📌 ข้อมูลสภาเด็กและเยาวชน</h3>
-            <div><label className="block text-xs font-bold text-slate-700 mb-1">ลิงก์ URL รูปถ่าย (ระบบดึงจาก LINE ให้อัตโนมัติ)</label><input required type="url" value={formData.imageUrl} onChange={e => setFormData({...formData, imageUrl: e.target.value})} className="w-full px-3 py-2 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-xs text-slate-500 bg-white" placeholder="https://..." /></div>
+            
+            {/* 🚀 แก้ไข: นำ required ออกจากลิงก์รูปภาพ และทำให้เป็นช่องอ่านอย่างเดียว (readOnly) */}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">รูปถ่ายโปรไฟล์ (ระบบดึงจาก LINE ให้อัตโนมัติ)</label>
+              <input type="url" value={formData.imageUrl} readOnly className="w-full px-3 py-2 border rounded-xl bg-slate-100 text-slate-500 text-xs focus:outline-none cursor-not-allowed" placeholder="ไม่มีรูปภาพโปรไฟล์" />
+            </div>
+
             <div><label className="block text-xs font-bold text-slate-700 mb-1">เลขประจำตัวสมาชิกสภาเด็กและเยาวชน</label><input type="text" value={formData.memberId} onChange={e => setFormData({...formData, memberId: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" placeholder="เว้นว่างไว้หากยังไม่มี" /></div>
             <div><label className="block text-xs font-bold text-slate-700 mb-1">ตำแหน่ง *</label><input required type="text" value={formData.position} onChange={e => setFormData({...formData, position: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-[#06C755] text-sm" placeholder="เช่น ประธาน, สมาชิกทั่วไป" /></div>
             <div>
@@ -301,9 +312,6 @@ const DashboardView = () => {
   );
 };
 
-// ==========================================
-// 🌟 หน้า MembersView (จัดการสมาชิก - ฝั่ง Admin) อัปเดต 13 หัวข้อเหมือนฝั่ง LINE
-// ==========================================
 const MembersView = () => {
   const [members, setMembers] = useState<any[]>([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
@@ -312,7 +320,6 @@ const MembersView = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // 🚀 โครงสร้างฟอร์ม 13 หัวข้อสำหรับ Admin
   const initialForm = {
     imageUrl: '', memberId: '', position: 'สมาชิก', affiliation: 'คณะผู้บริหารสภาเด็กและเยาวชนจังหวัดลำพูน',
     firstName: '', lastName: '', nickname: '', age: '', height: '', weight: '',
@@ -394,8 +401,7 @@ const MembersView = () => {
                   <div><label className="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ติดต่อ *</label><input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full border p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-indigo-400 text-sm" placeholder="08X-XXX-XXXX" /></div>
                   <div className="md:col-span-2"><label className="block text-xs font-bold text-red-600 mb-1">เบอร์ติดต่อฉุกเฉิน *</label><input required type="tel" value={formData.emergencyPhone} onChange={e => setFormData({...formData, emergencyPhone: e.target.value})} className="w-full border border-red-200 bg-red-50 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-red-400 text-sm" placeholder="เบอร์ผู้ปกครอง/ญาติ" /></div>
                   
-                  {/* แสดง LINE ID แต่ห้ามแก้ */}
-                  <div className="md:col-span-3"><label className="block text-xs font-bold text-slate-400 mb-1">LINE User ID (ระบบดึงอัตโนมัติ)</label><input type="text" value={formData.lineUserId || ''} disabled className="w-full border p-2.5 rounded-xl bg-slate-50 text-slate-400 font-mono text-sm" placeholder="ไม่มีข้อมูล" /></div>
+                  <div className="md:col-span-3"><label className="block text-xs font-bold text-slate-400 mb-1">LINE User ID</label><input type="text" value={formData.lineUserId || ''} disabled className="w-full border p-2.5 rounded-xl bg-slate-50 text-slate-400 font-mono text-sm" placeholder="ไม่มีข้อมูล" /></div>
                 </div>
               </div>
 
@@ -569,31 +575,11 @@ const PlaceholderView = ({ title, desc, icon: Icon, color }: any) => (
 );
 
 // ==========================================
-// 🚀 ตัวดักจับลิงก์จาก LINE LIFF
-// ==========================================
-const LiffHelper = () => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const mode = searchParams.get('mode');
-    const liffState = searchParams.get('liff.state'); 
-
-    if (mode === 'register' || (liffState && liffState.includes('mode=register'))) {
-      navigate('/register', { replace: true });
-    }
-  }, [navigate]);
-
-  return null;
-};
-
-// ==========================================
 // 4. Router
 // ==========================================
 export default function App() {
   return (
     <Router>
-      <LiffHelper /> 
       <Routes>
         <Route path="/" element={<HomeView />} />
         <Route path="/dashboard" element={<DashboardView />} />
